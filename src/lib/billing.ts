@@ -6,7 +6,10 @@ const DAYS_PER_MONTH = DAYS_PER_YEAR / 12;
 
 function currencyDigits(currency: string): number {
   try {
-    const digits = new Intl.NumberFormat('en', { style: 'currency', currency: currency.toUpperCase() }).resolvedOptions().maximumFractionDigits;
+    const digits = new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).resolvedOptions().maximumFractionDigits ?? 2;
     if (!Number.isInteger(digits)) throw new Error('Currency precision is unavailable');
     return digits;
   } catch {
