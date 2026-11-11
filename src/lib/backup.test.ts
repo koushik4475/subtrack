@@ -10,6 +10,7 @@ const subscription = {
   frequency: 'monthly',
   intervalCount: 1,
   billingDay: 15,
+  websiteUrl: 'https://example.com',
   nextRenewalOn: '2026-12-15',
   startedOn: '2026-01-15',
   status: 'active',
