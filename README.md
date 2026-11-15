@@ -1,4 +1,7 @@
-# SubTrack
+# SubTrack | Offline Subscription Tracker and Recurring Expense Manager
+
+SubTrack is an offline-first subscription and recurring-payment tracker for monitoring services and everyday obligations such as broadband, rent, insurance, and mobile plans. It helps users record renewal dates, estimate monthly and yearly recurring spend, review payment history, and manage price changes. Records stay in browser-local IndexedDB: there is no bank integration, payment processing, or remote database, so export backups before clearing browser data or changing devices.
+
 
 An offline-first subscription and recurring-payment tracker with local-only financial records. Record subscriptions and offline obligations such as broadband, rent, insurance, and mobile plans; see upcoming renewals and estimated recurring spend.
 
