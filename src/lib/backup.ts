@@ -86,6 +86,11 @@ export async function exportBackup() {
 export function validateBackup(raw: unknown) {
   const data = backupSchema.parse(raw);
   const subscriptionIds = new Set(data.subscriptions.map((item) => item.id));
+  if (subscriptionIds.size !== data.subscriptions.length) throw new Error('Backup contains duplicate subscription IDs');
+  for (const [label, entries] of [['price change', data.priceChanges], ['payment event', data.paymentEvents]] as const) {
+    const ids = entries.map((entry) => entry.id);
+    if (new Set(ids).size !== ids.length) throw new Error(`Backup contains duplicate ${label} IDs`);
+  }
 
   for (const entry of [...data.priceChanges, ...data.paymentEvents]) {
     if (!subscriptionIds.has(entry.subscriptionId)) {
@@ -97,14 +102,40 @@ export function validateBackup(raw: unknown) {
 }
 
 export async function importBackup(data: z.infer<typeof backupSchema>, mode: 'merge' | 'replace') {
+  const validated = validateBackup(data);
   await db.transaction('rw', db.subscriptions, db.priceChanges, db.paymentEvents, async () => {
     if (mode === 'replace') {
       await db.subscriptions.clear();
       await db.priceChanges.clear();
       await db.paymentEvents.clear();
+      await db.subscriptions.bulkPut(validated.subscriptions);
+      await db.priceChanges.bulkPut(validated.priceChanges);
+      await db.paymentEvents.bulkPut(validated.paymentEvents);
+      return;
     }
-    await db.subscriptions.bulkPut(data.subscriptions);
-    await db.priceChanges.bulkPut(data.priceChanges);
-    await db.paymentEvents.bulkPut(data.paymentEvents);
+
+    // Keep current records intact when imported IDs collide. Remap each imported
+    // subscription and its history IDs before writing, preserving relationships.
+    const existingSubscriptionIds = new Set(await db.subscriptions.toCollection().primaryKeys());
+    const existingPriceIds = new Set(await db.priceChanges.toCollection().primaryKeys());
+    const existingPaymentIds = new Set(await db.paymentEvents.toCollection().primaryKeys());
+    const subscriptionIdMap = new Map<string, string>();
+    for (const item of validated.subscriptions) {
+      subscriptionIdMap.set(item.id, existingSubscriptionIds.has(item.id) ? crypto.randomUUID() : item.id);
+    }
+    const subscriptions = validated.subscriptions.map((item) => ({ ...item, id: subscriptionIdMap.get(item.id)! }));
+    const priceChanges = validated.priceChanges.map((item) => ({
+      ...item,
+      id: existingPriceIds.has(item.id) ? crypto.randomUUID() : item.id,
+      subscriptionId: subscriptionIdMap.get(item.subscriptionId)!,
+    }));
+    const paymentEvents = validated.paymentEvents.map((item) => ({
+      ...item,
+      id: existingPaymentIds.has(item.id) ? crypto.randomUUID() : item.id,
+      subscriptionId: subscriptionIdMap.get(item.subscriptionId)!,
+    }));
+    await db.subscriptions.bulkPut(subscriptions);
+    await db.priceChanges.bulkPut(priceChanges);
+    await db.paymentEvents.bulkPut(paymentEvents);
   });
 }
