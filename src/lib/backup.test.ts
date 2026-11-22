@@ -80,7 +80,19 @@ describe('backup validation', () => {
     expect(() => validateBackup(backup)).toThrow(/missing subscription/i);
   });
 
-  it('rejects invalid currency codes in subscription records', () => {\n    const backup = validBackup();\n    backup.subscriptions[0]!.currency = 'AAA';\n    expect(() => validateBackup(backup)).toThrow(/currency code/i);\n  });\n\n  it('rejects invalid currency codes in payment history', () => {\n    const backup = validBackup();\n    backup.paymentEvents[0]!.currency = '!!!';\n    expect(() => validateBackup(backup)).toThrow(/currency code/i);\n  });\n\n  it('rejects insecure website links', () => {
+  it('rejects invalid currency codes in subscription records', () => {
+    const backup = validBackup();
+    backup.subscriptions[0]!.currency = 'AAA';
+    expect(() => validateBackup(backup)).toThrow(/currency code/i);
+  });
+
+  it('rejects invalid currency codes in payment history', () => {
+    const backup = validBackup();
+    backup.paymentEvents[0]!.currency = '!!!';
+    expect(() => validateBackup(backup)).toThrow(/currency code/i);
+  });
+
+  it('rejects insecure website links', () => {
     const backup = validBackup();
     backup.subscriptions[0]!.websiteUrl = 'http://example.com';
     expect(() => validateBackup(backup)).toThrow();
