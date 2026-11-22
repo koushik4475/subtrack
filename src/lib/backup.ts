@@ -15,6 +15,15 @@ const category = z.enum([
   'Fitness', 'Education', 'Utilities', 'Housing', 'Insurance', 'Other',
 ] as [Category, ...Category[]]);
 
+const currencyCode = z.string().length(3).refine((value) => {
+  try {
+    new Intl.NumberFormat('en', { style: 'currency', currency: value.toUpperCase() }).format(0);
+    return true;
+  } catch {
+    return false;
+  }
+}, 'Invalid ISO currency code');
+
 const safeMinorUnits = z.number().int().nonnegative().refine(
   Number.isSafeInteger,
   'Amount exceeds the supported integer range',
@@ -25,7 +34,7 @@ const subscription = z.object({
   name: z.string().min(1).max(100),
   category,
   amountMinor: safeMinorUnits,
-  currency: z.string().length(3),
+  currency: currencyCode,
   frequency: z.enum(['weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'custom']),
   intervalCount: z.number().int().positive(),
   billingDay: z.number().int().min(1).max(31).optional(),
